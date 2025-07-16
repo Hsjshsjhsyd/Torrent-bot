@@ -8,13 +8,15 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 from pymongo import MongoClient
 from pyrogram import utils as pyroutils
-from aiohttp import web as webserver
 
 # Fix for large chat IDs
 pyroutils.MIN_CHAT_ID = -999999999999
 pyroutils.MIN_CHANNEL_ID = -100999999999999
 
-routes = webserver.RouteTableDef()
+async def bot_run():
+    _app = webserver.Application(client_max_size=30000000)
+    _app.add_routes(routes)
+    return _app
 
 load_dotenv()
 
@@ -24,16 +26,16 @@ API_ID = int(os.getenv("API_ID"))
 API_HASH = os.getenv("API_HASH")
 MONGO_URI = os.getenv("MONGO_URI")
 ADMINS = [int(x) for x in os.getenv("ADMINS", "").split(",") if x.strip()]
-DOWNLOAD_PATH = os.getenv("DOWNLOAD_PATH", "downloads")
+DOWNLOAD_PATH = os.getenv("DOWNLOAD_PATH", "/downloads")
 ARIA2C_PATH = os.getenv("ARIA2C_PATH", "/usr/bin/aria2c")
 UPLOAD_CHANNEL = int(os.getenv("UPLOAD_CHANNEL"))
 CHANNEL = int(os.getenv("CHANNEL"))
 MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", "2000"))
 
-async def bot_run():
-    _app = webserver.Application(client_max_size=30_000_000)
-    _app.add_routes(routes)
-    return _app
+from aiohttp import web as webserver
+
+routes = webserver.RouteTableDef()
+
 
 @routes.get("/", allow_head=True)
 async def root_route_handler(request):
@@ -160,7 +162,7 @@ async def run_aria2c(link_or_path, user_id, progress_msg):
         caption = f"✅ Uploaded: `{clean_name}`\n📦 Size: {size_mb:.2f} MB"
 
         try:
-            await app.send_document(chat_id=UPLOAD_CHANNEL, document=file_path, thumb="thumb.jpeg", caption=caption)
+            await app.send_document(chat_id=UPLOAD_CHANNEL, document=file_path, caption=caption)
             print(f"✅ Uploaded: {clean_name}")
         except Exception as e:
             await app.send_message(ADMINS[0], f"⚠️ Upload failed for {clean_name}: {e}")
@@ -193,6 +195,7 @@ async def queue_worker():
 async def start(client, message: Message):
     await message.reply_text("**👋 Hello!**\n\nSend me a torrent in the channel, and I will upload the files to another channel.")
 
+# ==== MAIN ====
 if __name__ == "__main__":
     if not os.path.exists(DOWNLOAD_PATH):
         os.makedirs(DOWNLOAD_PATH)
