@@ -158,7 +158,7 @@ async def run_aria2c(link_or_path, user_id, progress_msg):
         caption = f"✅ Uploaded: `{clean_name}`\n📦 Size: {size_mb:.2f} MB"
 
         try:
-            await app.send_document(chat_id=UPLOAD_CHANNEL, document=file_path, caption=caption)
+            await app.send_document(chat_id=UPLOAD_CHANNEL, document=file_path, thumb="thumb.jpeg", caption=caption)
             print(f"✅ Uploaded: {clean_name}")
         except Exception as e:
             await app.send_message(ADMINS[0], f"⚠️ Upload failed for {clean_name}: {e}")
