@@ -14,6 +14,8 @@ from aiohttp import web as webserver
 pyroutils.MIN_CHAT_ID = -999999999999
 pyroutils.MIN_CHANNEL_ID = -100999999999999
 
+routes = webserver.RouteTableDef()
+
 load_dotenv()
 
 # ==== CONFIG ====
