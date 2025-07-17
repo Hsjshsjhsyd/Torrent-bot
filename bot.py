@@ -8,15 +8,19 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 from pymongo import MongoClient
 from pyrogram import utils as pyroutils
+import subprocess
+from flask import Flask, jsonify
 
 # Fix for large chat IDs
 pyroutils.MIN_CHAT_ID = -999999999999
 pyroutils.MIN_CHANNEL_ID = -100999999999999
 
-async def bot_run():
-    _app = webserver.Application(client_max_size=30000000)
-    _app.add_routes(routes)
-    return _app
+app_web = Flask(__name__)
+
+@app_web.route("/")
+def home():
+    return jsonify({"status": "ok", "message": "Bot is running on Flask!"})
+
 
 load_dotenv()
 
@@ -31,23 +35,6 @@ ARIA2C_PATH = os.getenv("ARIA2C_PATH", "/usr/bin/aria2c")
 UPLOAD_CHANNEL = int(os.getenv("UPLOAD_CHANNEL"))
 CHANNEL = int(os.getenv("CHANNEL"))
 MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", "2000"))
-
-from aiohttp import web as webserver
-
-routes = webserver.RouteTableDef()
-
-
-@routes.get("/", allow_head=True)
-async def root_route_handler(request):
-    return webserver.json_response("✅ Web Supported . . . ! Bot is running fine! 🚀")
-
-async def start_web_server():
-    client = webserver.AppRunner(await bot_run())
-    await client.setup()
-    bind_address = "0.0.0.0"
-    await webserver.TCPSite(client, bind_address, 8080).start()
-    print(f"✅ Web server started on http://{bind_address}:8080")
-
 
 # ==== DATABASE ====
 mongo_client = MongoClient(MONGO_URI)
@@ -195,11 +182,11 @@ async def queue_worker():
 async def start(client, message: Message):
     await message.reply_text("**👋 Hello!**\n\nSend me a torrent in the channel, and I will upload the files to another channel.")
 
-# ==== MAIN ====
 if __name__ == "__main__":
     if not os.path.exists(DOWNLOAD_PATH):
         os.makedirs(DOWNLOAD_PATH)
     loop = asyncio.get_event_loop()
     loop.create_task(queue_worker())
-    loop.create_task(start_web_server())  # ✅ Start web server for Koyeb
+    from threading import Thread
+    Thread(target=lambda: app_web.run(host="0.0.0.0", port=PORT)).start()
     app.run()
